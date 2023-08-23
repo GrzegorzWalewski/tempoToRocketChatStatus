@@ -90,7 +90,7 @@ function updateStatus() {
                 myHeaders.append("Content-type", "application/json");
 
                 var raw = JSON.stringify({
-                    "message": "💻: " + workHours[0] + " 🏁" + workHours[1],
+                    "message": "💻 " + workHours[0] + " - 🏁 " + workHours[1],
                     "status": "online"
                 });
 
