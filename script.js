@@ -3,7 +3,7 @@
 // @namespace   Violentmonkey Scripts
 // @match       https://rocket.example.com/*
 // @grant       none
-// @version     1.0
+// @version     2.0
 // @author      Grzegorz Grzojda Walewski
 // @description Set rocketChat status to Your working hours.
 // ==/UserScript==
@@ -69,20 +69,31 @@ function updateStatus() {
         .then(response => response.text())
         .then(result => {
             var workLog = JSON.parse(result).results[0];
+            var message = "";
+            var status = "away";
             if (workLog != undefined) {
-                return workLog.startTime;
+                var startTime = workLog.startTime;
+                var [hour, minutes] = startTime.split(':');
+                var finishHour = Number(hour) + 8;
+                startTime = hour + ":" + minutes;
+                finishTime = finishHour + ":" + minutes;
+                var workEndTime = new Date();
+                workEndTime.setHours(finishHour, minutes);
+                
+                if (new Date() >= workEndTime)
+                {
+                    message = "🏁 " + finishTime + " 💻 Tomorrow";
+                } else {
+                    status = "online";
+                    message = "💻 " + startTime + " 🏁" + finishTime;
+                }
+            } else {
+                message = "💻 " + "??" + " 🏁 ??";
             }
-
-            console.log('You dont have any work logs today');
+            
+            return [status, message];
         })
-        .then(startTime => {
-            var [hour, minutes] = startTime.split(':');
-            var finishHour = Number(hour) + 8;
-            startTime = hour + ":" + minutes;
-            finishTime = finishHour + ":" + minutes;
-            return [startTime, finishTime];
-        })
-        .then(workHours => {
+        .then(status => {
             return (function () {
                 var myHeaders = new Headers();
                 myHeaders.append("X-Auth-Token", CookieManager.getCookie('rc_token'));
@@ -90,8 +101,8 @@ function updateStatus() {
                 myHeaders.append("Content-type", "application/json");
 
                 var raw = JSON.stringify({
-                    "message": "💻: " + workHours[0] + " 🏁" + workHours[1],
-                    "status": "online"
+                    "message": status[1],
+                    "status": status[0]
                 });
 
                 var requestOptions = {
