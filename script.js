@@ -5,7 +5,7 @@
 // @grant       none
 // @version     2.0
 // @author      Grzegorz Grzojda Walewski
-// @description Set rocketChat status to Your working hours.
+// @description 23.08.2023, 17:29:56
 // ==/UserScript==
 
 /** Config
@@ -31,6 +31,17 @@ const tempoBearerToken = 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX';
 const tempoUserId = 'YYYYYYYYYYYYYYYYYYYYYYY';
 const dailyWorkTime = 8;
 const updateEach = 30;
+
+// What status should be set at each codition busy/away/online/offline
+const afterWorkStatus = 'busy';
+const onWeekendStatus = 'offline';
+const beforeWorkStatus = 'away';
+const atWorkStatus = 'online';
+
+// You can set your custom messages
+const beforeWorkMessage = "💻 ?? 🏁 ??";
+const onWeekendMessage = null; // if null, "🏁  $finishTime$ 💻 Monday" will be used
+
 /**
  * END OF CONFIGURATION
  **/
@@ -70,7 +81,7 @@ function updateStatus() {
         .then(result => {
             var workLog = JSON.parse(result).results[0];
             var message = "";
-            var status = "away";
+            var status = "";
             if (workLog != undefined) {
                 var startTime = workLog.startTime;
                 var [hour, minutes] = startTime.split(':');
@@ -79,18 +90,25 @@ function updateStatus() {
                 finishTime = finishHour + ":" + minutes;
                 var workEndTime = new Date();
                 workEndTime.setHours(finishHour, minutes);
-                
+
                 if (new Date() >= workEndTime)
                 {
-                    message = "🏁 " + finishTime + " 💻 Tomorrow";
+                    if (isTodayFriday()) {
+                      message = (onWeekendMessage === null) ? "🏁 " + finishTime + " 💻 Monday" : onWeekendMessage;
+                      status = onWeekendStatus;
+                    } else {
+                      message = "🏁 " + finishTime + " 💻 Tomorrow";
+                      status = afterWorkStatus;
+                    }
                 } else {
-                    status = "online";
+                    status = atWorkStatus;
                     message = "💻 " + startTime + " 🏁" + finishTime;
                 }
             } else {
-                message = "💻 " + "??" + " 🏁 ??";
+                message = beforeWorkMessage;
+                status = beforeWorkStatus;
             }
-            
+
             return [status, message];
         })
         .then(status => {
@@ -119,6 +137,11 @@ function updateStatus() {
             })();
         })
         .catch(error => console.log('error', error));
+}
+
+function isTodayFriday() {
+  const today = new Date();
+  return today.getDay() === 5;
 }
 
 updateStatus();
